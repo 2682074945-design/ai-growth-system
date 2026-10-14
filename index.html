@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102a43">
+  <title>AI 成长系统</title>
+  <style>
+    :root { --ink:#102a43; --muted:#627d98; --line:#d9e2ec; --paper:#f6f8fb; --accent:#eb6f4c; --blue:#2867b2; --green:#15803d; }
+    * { box-sizing:border-box; } body { margin:0; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--paper); }
+    .shell { max-width:760px; margin:auto; padding:24px 18px 58px; }
+    header { background:linear-gradient(135deg,#102a43,#234e78); color:#fff; padding:25px 23px 22px; border-radius:22px; box-shadow:0 10px 28px #102a4328; }
+    .eyebrow { font-size:12px; font-weight:700; letter-spacing:.11em; opacity:.72; } h1 { font-size:28px; margin:8px 0 5px; letter-spacing:-.04em; } .sub { margin:0; color:#dbeafe; font-size:14px; }
+    .progressline { display:flex; gap:12px; align-items:center; margin-top:20px; font-size:13px; } .bar { flex:1; height:7px; background:#ffffff35; border-radius:99px; overflow:hidden; } .fill { height:100%; width:3.33%; background:#fbc17c; border-radius:inherit; transition:.25s; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:17px; padding:19px; margin-top:16px; box-shadow:0 3px 11px #102a4307; }
+    .section-label { font-size:12px; font-weight:800; letter-spacing:.08em; color:var(--blue); text-transform:uppercase; } h2 { margin:6px 0 8px; font-size:21px; letter-spacing:-.025em; } p { line-height:1.65; } .muted { color:var(--muted); font-size:14px; margin:0; }
+    .day-picker { display:flex; overflow:auto; gap:8px; padding:4px 1px 5px; scrollbar-width:none; } .day-picker button { flex:0 0 auto; border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:99px; padding:8px 12px; font-weight:700; cursor:pointer; } .day-picker button.active { background:var(--ink); border-color:var(--ink); color:#fff; }
+    .task { display:flex; gap:12px; align-items:flex-start; padding:15px 0; border-top:1px solid #eef2f6; } .task:first-of-type { border-top:0; } input[type=checkbox] { appearance:none; flex:0 0 23px; width:23px; height:23px; margin:1px 0 0; border:2px solid #9fb3c8; border-radius:7px; cursor:pointer; } input[type=checkbox]:checked { border-color:var(--green); background:var(--green) center/14px no-repeat; background-image:linear-gradient(45deg,transparent 45%,#fff 46% 56%,transparent 57%),linear-gradient(-45deg,transparent 43%,#fff 44% 54%,transparent 55%); } .task:has(input:checked) .task-title { text-decoration:line-through; color:#829ab1; } .task-title { font-weight:800; font-size:16px; } .task-meta { margin-top:4px; font-size:13px; color:var(--muted); line-height:1.55; }
+    .deliverable { background:#fff8f2; border-left:4px solid var(--accent); padding:12px 13px; border-radius:0 10px 10px 0; margin-top:6px; font-size:14px; line-height:1.55; }
+    .routine { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; } .routine div { border:1px solid var(--line); padding:12px; border-radius:11px; font-size:13px; } .routine b { display:block; margin-bottom:4px; }
+    .button { width:100%; margin-top:13px; padding:12px 14px; border:0; border-radius:11px; background:var(--ink); color:#fff; font-size:14px; font-weight:800; cursor:pointer; } .button.secondary { background:#e8f1fb; color:#174a7c; }
+    #review { display:none; white-space:pre-wrap; font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; background:#f0f4f8; padding:13px; border-radius:10px; margin-top:12px; color:#243b53; }
+    .note { font-size:12px; color:#829ab1; margin:12px 0 0; }
+    @media(max-width:480px) { .shell { padding:16px 12px 42px; } header { padding:21px 18px; border-radius:18px; } h1 { font-size:25px; } .card { padding:16px; } .routine { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="eyebrow">PERSONAL AI GROWTH SYSTEM · V1.0</div>
+      <h1>今天要完成什么？</h1>
+      <p class="sub" id="headerSub">论文优先 · 每天一个可交付成果</p>
+      <div class="progressline"><span id="progressText">Day 1 / 30</span><div class="bar"><div class="fill" id="fill"></div></div><span id="doneText">0/3</span></div>
+    </header>
+
+    <section class="card">
+      <div class="section-label">选择训练日</div>
+      <div class="day-picker" id="dayPicker"></div>
+      <p class="note">Day 1 已按当前论文优先级调整；后续日期可随进度在对话中更新。</p>
+    </section>
+
+    <section class="card">
+      <div class="section-label">今日主线</div>
+      <h2 id="theme"></h2>
+      <p class="muted" id="goal"></p>
+    </section>
+
+    <section class="card">
+      <div class="section-label">可勾选任务</div>
+      <div id="tasks"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-label">固定训练</div>
+      <div class="routine">
+        <div><b>通勤输入 · 2 小时</b>AI行业 30 分｜论文 40 分｜英文 30 分｜复盘 20 分</div>
+        <div><b>开题表达 · 30 分</b>问题 → 做法 → 预期解释/方案 → 预期成果</div>
+        <div><b>晨间任务卡</b>每天 08:30 在“明日任务预告”查看</div>
+        <div><b>晚间复盘</b>每天 21:30 提交完成情况并调整次日任务</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-label">晚间提交</div>
+      <h2>生成复盘模板</h2>
+      <p class="muted">勾选后生成模板，复制到“明日任务预告”对话提交。</p>
+      <button class="button" id="reviewButton">生成今日复盘</button>
+      <div id="review"></div>
+      <button class="button secondary" id="resetButton">重置本日勾选</button>
+      <p class="note">勾选状态保存在当前浏览器设备中。换手机或清除浏览器数据后需重新勾选；每日任务内容以“明日任务预告”对话为准。</p>
+    </section>
+  </main>
+  <script>
+    const plans = [
+      {theme:'论文数据验证与试编码',goal:'把 WildChat 可行性结论转化为论文方法材料，而不是继续做泛泛学习。',tasks:[['完成《WildChat 样本筛选规则与试编码记录 V1》','90 分钟｜写筛选/排除规则、建立编码表，并试编码 10 条中文多轮对话。','交付：筛选规则 + 10 条编码表 + 5 条试编码发现'],['开题报告表达训练','30 分钟｜以一条试编码案例说明：为什么“后续提问”不一定是“修复失配”。','交付：3 分钟第一次表达 + 修改要点 + 第二次表达'],['晚间提交复盘','10 分钟｜说明今天完成了什么、卡在哪里、明天的最重要一项。','交付：复盘模板填写完成']]},
+      {theme:'LLM 产品基础',goal:'理解大模型能力边界，并把技术概念翻译成产品判断。',tasks:[['整理大模型基础 V1','Transformer、Token、上下文窗口、Embedding、RAG：分别写“用户影响/产品关注点”。','交付：《AI 产品经理必须懂的大模型基础 V1》'],['面试表达','回答：如何向非技术人员解释大模型？','交付：1 分钟录音']]},
+      {theme:'Prompt 优化实验',goal:'用真实简历优化产品建立 Prompt 版本与效果对照。',tasks:[['设计三版 Prompt','普通优化 / 加岗位目标 / 加事实约束。','交付：《Prompt 优化实验记录》'],['比较输出','记录事实一致性与岗位匹配差异。','交付：版本对比表']]},
+      {theme:'AI 幻觉与控制',goal:'将风险识别转化为可执行的产品控制方案。',tasks:[['完善事实一致性方案','定义风险等级、拦截策略与人工确认点。','交付：《AI 简历事实一致性方案》'],['面试表达','回答：如何解决 AI 幻觉问题？','交付：结构化回答']]},
+      {theme:'AI 产品评测体系',goal:'把输入、输出、标准与优化闭环应用到真实 AI Assistant。',tasks:[['制作评测模板','定义场景、标准、Bad Case、指标与优化动作。','交付：《AI Assistant 评测模板》'],['应用到 Client Portal','填入至少 5 个真实或模拟案例。','交付：初版案例表']]},
+      {theme:'Agent 产品基础',goal:'理解 Agent 目标、规划、工具调用、执行与反馈的完整闭环。',tasks:[['梳理 Agent 设计','以个人 AI 职业助手为例设计任务流。','交付：《Agent 产品设计理解》'],['工具体验','体验一个 Agent 工作流并记录边界。','交付：工具体验记录']]},
+      {theme:'第一周复盘',goal:'将 AI 产品基础学习沉淀为能力地图。',tasks:[['形成能力地图','列出已有能力、证据与缺口。','交付：《我的 AI 产品能力地图 V1》'],['下周论文安排','确认筛选、编码、样本与方法推进顺序。','交付：下周三项重点']]},
+      {theme:'WildChat 数据筛选',goal:'固定可复现的样本进入规则。',tasks:[['完成筛选规则 V1','中文、多轮、内容生产、任务连续性、修复候选。','交付：筛选流程图与判定规则']]},
+      {theme:'论文编码体系',goal:'把研究概念变成可操作字段。',tasks:[['完成编码表','用户意图、约束、失配、修复、结果。','交付：编码手册 V1']]},
+      {theme:'人工试编码',goal:'验证编码规则是否可用。',tasks:[['编码 10 条样本','逐条追踪要求与修复过程。','交付：10 条分析记录']]},
+      {theme:'意图失配分类',goal:'从样本中归纳可核验的失配类型。',tasks:[['总结 Bad Case','区分遗漏约束、误解需求、风格偏离等。','交付：《生成式 AI 用户意图失配分类》']]},
+      {theme:'论文发现到产品机会',goal:'把研究发现翻译为产品设计语言。',tasks:[['建立映射表','每类失配对应一个交互优化机会。','交付：《论文发现 → AI 产品优化机会》']]},
+      {theme:'论文阅读与产品启发',goal:'用两篇文献补强方法和产品视角。',tasks:[['阅读两篇论文','每篇记录研究问题、方法、产品启发。','交付：两份三问阅读笔记']]},
+      {theme:'方法章节推进',goal:'把数据、样本与分析方法写进论文。',tasks:[['写研究设计初稿','说明数据、抽样、编码、一致性与分析方法。','交付：方法章节初稿']]},
+      {theme:'论文与产品资产包',goal:'复盘第二阶段并形成可展示成果。',tasks:[['整合资产','论文方法、编码表、产品映射与表达材料。','交付：《AI 产品 + 论文能力资产包》']]},
+      {theme:'Client Portal 项目介绍',goal:'把真实实习工作变成可讲述的 AI 产品项目。',tasks:[['写项目介绍','背景、问题、职责、动作、结果。','交付：项目介绍 V1']]},
+      {theme:'AI Assistant Bad Case',goal:'沉淀评测方法与问题发现能力。',tasks:[['整理测试案例','归类问题、证据、优先级与建议。','交付：Bad Case 表']]},
+      {theme:'Journey Builder 分析',goal:'说明从规则自动化到智能决策的设计思考。',tasks:[['输出产品分析','旅程、Action、分支、数据反馈。','交付：Journey Builder 产品设计分析']]},
+      {theme:'UEP AI 翻译分析',goal:'建立企业 AI 翻译的质量控制视角。',tasks:[['输出流程分析','Prompt、变量保护、人工审核、质量评价。','交付：企业 AI 翻译产品方案分析']]},
+      {theme:'数据看板指标体系',goal:'把业务需求转成可监测指标。',tasks:[['定义指标体系','目标、核心指标、口径、异常判断。','交付：数据看板指标体系']]},
+      {theme:'龙腾项目表达',goal:'练习完整讲述真实项目。',tasks:[['模拟 5 分钟讲述','使用问题 → 做法 → 方案 → 成果。','交付：5 分钟录音与修改稿']]},
+      {theme:'简历项目描述',goal:'将项目经历写成可验证的成果。',tasks:[['优化简历描述','聚焦职责、方法、指标与影响。','交付：三段项目经历']]},
+      {theme:'龙腾作品集',goal:'汇总可投递、可面试的案例。',tasks:[['形成作品集','整合三个以上实习案例。','交付：《龙腾 AI 产品实践作品集》']]},
+      {theme:'AI 产品岗位分析',goal:'反推目标岗位需要的能力证据。',tasks:[['分析 JD','提取能力、项目和技术关键词。','交付：岗位能力模型']]},
+      {theme:'项目面试训练',goal:'让三个核心项目经得起追问。',tasks:[['练项目回答','AI 简历、龙腾、论文。','交付：项目问答库']]},
+      {theme:'产品设计题',goal:'练习 AI 助手产品设计逻辑。',tasks:[['完成产品题','设计一个 AI 助手并给出指标与风险。','交付：设计题答案']]},
+      {theme:'AI 产品趋势',goal:'建立有观点的行业判断。',tasks:[['输出趋势笔记','选择一个趋势，说明影响、机会和风险。','交付：AI 产品趋势笔记']]},
+      {theme:'英文产品表达',goal:'能用英文清楚介绍一个 AI 产品。',tasks:[['英文输出','Introduce an AI product。','交付：1 分钟英文录音']]},
+      {theme:'完整模拟面试',goal:'串联自我介绍、项目、产品题与 AI 问题。',tasks:[['完成模拟','30 分钟限时演练。','交付：复盘与薄弱点清单']]},
+      {theme:'求职能力报告',goal:'形成下一阶段清晰的行动依据。',tasks:[['完成总结','优势、项目资产、技术能力、待补足能力。','交付：《AI 产品经理求职能力报告》']]}
+    ];
+    let day = Number(localStorage.getItem('ai-growth-day') || 1);
+    const key = () => `ai-growth-checks-day-${day}`;
+    function render(){
+      const p=plans[day-1]; document.querySelector('#theme').textContent=`Day ${day}｜${p.theme}`; document.querySelector('#goal').textContent=p.goal;
+      document.querySelector('#headerSub').textContent=day<=15?'论文优先 · 每天一个可交付成果':'实习与求职资产 · 每天一个可交付成果';
+      document.querySelector('#progressText').textContent=`Day ${day} / 30`; document.querySelector('#fill').style.width=`${day/30*100}%`;
+      const saved=JSON.parse(localStorage.getItem(key())||'[]'); const tasks=document.querySelector('#tasks'); tasks.innerHTML='';
+      p.tasks.forEach((t,i)=>{const id=`d${day}t${i}`; const el=document.createElement('label'); el.className='task'; el.innerHTML=`<input type="checkbox" ${saved[i]?'checked':''} data-i="${i}"><span><span class="task-title">${t[0]}</span><span class="task-meta">${t[1]}</span><span class="deliverable"><b>提交内容：</b>${t[2]}</span></span>`; tasks.appendChild(el);});
+      document.querySelectorAll('#tasks input').forEach(x=>x.addEventListener('change',save)); updateProgress(); renderPicker();
+    }
+    function save(){ const values=[...document.querySelectorAll('#tasks input')].map(x=>x.checked); localStorage.setItem(key(),JSON.stringify(values)); updateProgress(); }
+    function updateProgress(){const inputs=[...document.querySelectorAll('#tasks input')]; document.querySelector('#doneText').textContent=`${inputs.filter(x=>x.checked).length}/${inputs.length}`;}
+    function renderPicker(){const root=document.querySelector('#dayPicker'); root.innerHTML=''; plans.forEach((_,i)=>{const b=document.createElement('button'); b.textContent=`D${i+1}`; if(i+1===day)b.className='active'; b.onclick=()=>{day=i+1;localStorage.setItem('ai-growth-day',day);render();};root.appendChild(b);});}
+    document.querySelector('#reviewButton').onclick=()=>{const p=plans[day-1], done=[...document.querySelectorAll('#tasks input')].map((x,i)=>x.checked?`✓ ${p.tasks[i][0]}`:`○ ${p.tasks[i][0]}`).join('\n'); const r=document.querySelector('#review'); r.style.display='block'; r.textContent=`日期：\nDay ${day}｜${p.theme}\n\n今日完成：\n${done}\n\n今日产出文件：\n1. \n\n遇到问题：\n1. \n\n明日重点：\n1. `;};
+    document.querySelector('#resetButton').onclick=()=>{localStorage.removeItem(key());document.querySelector('#review').style.display='none';render();};
+    render();
+  </script>
+</body>
+</html>
